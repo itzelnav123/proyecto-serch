@@ -2,7 +2,7 @@ import tkinter as tk
 from tkinter import ttk, messagebox, filedialog
 from datetime import datetime, date
 import calendar
-import json
+import hashlib
 import os
 import shutil
 import subprocess
@@ -243,52 +243,204 @@ GRUPO_SESION = GRUPO_DOCENTE
 USUARIO_SESION = ""
 CONTRASENAS_GRUPOS = {f"{n}° A": f"grupo{n}" for n in range(1, 7)}
 CALENDARIO_PDF = ""
-ALUMNOS_COMPARTIDOS = [
-    {"nombre": "Juan Pérez", "asistencias": 12, "faltas": 1, "retardos": 0},
-    {"nombre": "María López", "asistencias": 13, "faltas": 0, "retardos": 1},
-    {"nombre": "Carlos Gómez", "asistencias": 10, "faltas": 3, "retardos": 0}
-]
+ALUMNOS_COMPARTIDOS = []
 REGISTROS_ASISTENCIA = []
 ALERTAS_SEGUIMIENTO = []
 ARCHIVOS_JUSTIFICANTES = []
 GRUPOS_ESCOLARES = {f"{n}° A": [] for n in range(1, 7)}
-GRUPOS_ESCOLARES[GRUPO_DOCENTE] = [a["nombre"] for a in ALUMNOS_COMPARTIDOS]
 UMBRAL_ALERTA = 3
-ARCHIVO_DATOS = os.path.join(os.path.dirname(os.path.abspath(__file__)), "datos_asistencia.json")
 
-def guardar_datos():
-    datos = {
-        "alumnos": ALUMNOS_COMPARTIDOS,
-        "registros": REGISTROS_ASISTENCIA,
-        "alertas": ALERTAS_SEGUIMIENTO,
-        "archivos_justificantes": ARCHIVOS_JUSTIFICANTES,
-        "grupos_escolares": GRUPOS_ESCOLARES,
-        "contrasenas_grupos": CONTRASENAS_GRUPOS,
-        "calendario_pdf": CALENDARIO_PDF
-    }
+GRADOS_DB = {1: "Primero", 2: "Segundo", 3: "Tercero", 4: "Cuarto", 5: "Quinto", 6: "Sexto"}
+GRADOS_UI = {v: f"{k}° A" for k, v in GRADOS_DB.items()}
+
+def hash_clave(clave):
+    return hashlib.sha256(clave.encode("utf-8")).hexdigest()
+
+def ejecutar_consulta(sql, parametros=(), obtener=False, commit=True):
+    conexion = conectar()
+    if conexion is None:
+        return None if obtener else False
+    cursor = None
     try:
-        with open(ARCHIVO_DATOS, "w", encoding="utf-8") as archivo:
-            json.dump(datos, archivo, ensure_ascii=False, indent=4)
-    except OSError:
-        pass
+        cursor = conexion.cursor(dictionary=True)
+        cursor.execute(sql, parametros)
+        resultado = cursor.fetchall() if obtener else True
+        if commit:
+            conexion.commit()
+        return resultado
+    except mysql.connector.Error as error:
+        conexion.rollback()
+        messagebox.showerror("Error de base de datos", str(error))
+        return None if obtener else False
+    finally:
+        if cursor:
+            cursor.close()
+        conexion.close()
+
+def preparar_base_aplicacion():
+    """Crea únicamente la tabla auxiliar de accesos; nunca elimina ni recrea tablas existentes."""
+    conexion = conectar()
+    if conexion is None:
+        return False
+    cursor = conexion.cursor()
+    try:
+        cursor.execute("""CREATE TABLE IF NOT EXISTS accesos_sistema (
+            id_acceso INT AUTO_INCREMENT PRIMARY KEY,
+            tipo ENUM('director','docente') NOT NULL,
+            id_grupo INT NULL,
+            usuario VARCHAR(100) NOT NULL,
+            clave_hash CHAR(64) NOT NULL,
+            UNIQUE KEY uq_acceso_grupo (tipo, id_grupo),
+            UNIQUE KEY uq_acceso_usuario (usuario)
+        ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4""")
+        conexion.commit()
+        # Accesos iniciales de compatibilidad. Se pueden cambiar desde Dirección.
+        cursor.execute("SELECT COUNT(*) FROM accesos_sistema WHERE tipo='director'")
+        if cursor.fetchone()[0] == 0:
+            cursor.execute("INSERT INTO accesos_sistema (tipo,id_grupo,usuario,clave_hash) VALUES ('director',NULL,'director',%s)", (hash_clave("654321"),))
+        cursor.execute("SELECT id_grupo, grado, grupo FROM grupos")
+        filas = cursor.fetchall()
+        for id_grupo, grado, letra in filas:
+            etiqueta = GRADOS_UI.get(str(grado), f"{grado}° {letra}")
+            cursor.execute("SELECT COUNT(*) FROM accesos_sistema WHERE tipo='docente' AND id_grupo=%s", (id_grupo,))
+            if cursor.fetchone()[0] == 0:
+                numero = next((n for n, nombre in GRADOS_DB.items() if nombre.lower() == str(grado).lower()), None)
+                if numero:
+                    cursor.execute("INSERT INTO accesos_sistema (tipo,id_grupo,usuario,clave_hash) VALUES ('docente',%s,%s,%s)", (id_grupo, etiqueta, hash_clave(f"grupo{numero}")))
+        conexion.commit()
+        return True
+    except mysql.connector.Error as error:
+        conexion.rollback()
+        messagebox.showerror("Preparación de MySQL", str(error))
+        return False
+    finally:
+        cursor.close()
+        conexion.close()
+
+def obtener_grupos_db():
+    filas = ejecutar_consulta("SELECT id_grupo, grado, grupo, turno, ciclo_escolar FROM grupos ORDER BY id_grupo", obtener=True) or []
+    resultado = {}
+    for fila in filas:
+        grado = str(fila["grado"])
+        etiqueta = GRADOS_UI.get(grado, f"{grado}° {fila['grupo']}")
+        resultado[etiqueta] = fila
+    return resultado
 
 def cargar_datos():
-    global ALUMNOS_COMPARTIDOS, REGISTROS_ASISTENCIA, ALERTAS_SEGUIMIENTO, GRUPOS_ESCOLARES, ARCHIVOS_JUSTIFICANTES, CONTRASENAS_GRUPOS, CALENDARIO_PDF
+    """Carga grupos, alumnos, asistencias y alertas exclusivamente desde MySQL."""
+    global ALUMNOS_COMPARTIDOS, REGISTROS_ASISTENCIA, ALERTAS_SEGUIMIENTO, GRUPOS_ESCOLARES, CONTRASENAS_GRUPOS
+    if not preparar_base_aplicacion():
+        return
+    grupos_db = obtener_grupos_db()
+    GRUPOS_ESCOLARES = {nombre: [] for nombre in grupos_db}
+    CONTRASENAS_GRUPOS = {}
+    accesos = ejecutar_consulta("""SELECT a.usuario, a.clave_hash, a.id_grupo, g.grado, g.grupo
+        FROM accesos_sistema a LEFT JOIN grupos g ON g.id_grupo=a.id_grupo
+        WHERE a.tipo='docente'""", obtener=True) or []
+    for acceso in accesos:
+        grado = str(acceso["grado"] or "")
+        etiqueta = GRADOS_UI.get(grado, f"{grado}° {acceso['grupo']}")
+        # El hash se conserva en MySQL; la interfaz no necesita conocer la clave en texto.
+        CONTRASENAS_GRUPOS[etiqueta] = acceso["clave_hash"]
+    alumnos_db = ejecutar_consulta("""SELECT a.id_alumno,a.matricula,a.nombre_completo,a.id_grupo,g.grado,g.grupo
+        FROM alumnos a JOIN grupos g ON g.id_grupo=a.id_grupo ORDER BY a.nombre_completo""", obtener=True) or []
+    ALUMNOS_COMPARTIDOS = []
+    mapa_alumnos = {}
+    for fila in alumnos_db:
+        etiqueta = GRADOS_UI.get(str(fila["grado"]), f"{fila['grado']}° {fila['grupo']}")
+        alumno = {"id_alumno": fila["id_alumno"], "matricula": fila["matricula"], "nombre": fila["nombre_completo"], "grupo": etiqueta, "asistencias": 0, "faltas": 0, "retardos": 0}
+        GRUPOS_ESCOLARES.setdefault(etiqueta, []).append(alumno["nombre"])
+        mapa_alumnos[alumno["id_alumno"]] = alumno
+        if etiqueta == GRUPO_DOCENTE:
+            ALUMNOS_COMPARTIDOS.append(alumno)
+    filas_asistencia = ejecutar_consulta("""SELECT a.id_asistencia,a.id_alumno,a.fecha,a.estado,a.observaciones
+        FROM asistencia a ORDER BY a.fecha""", obtener=True) or []
+    REGISTROS_ASISTENCIA = []
+    for fila in filas_asistencia:
+        alumno = mapa_alumnos.get(fila["id_alumno"])
+        if not alumno:
+            continue
+        estado = "Justificada" if fila["estado"] == "Justificado" else fila["estado"]
+        fecha_valor = fila["fecha"].isoformat() if hasattr(fila["fecha"], "isoformat") else str(fila["fecha"])
+        REGISTROS_ASISTENCIA.append({"id_asistencia": fila["id_asistencia"], "id_alumno": fila["id_alumno"], "nombre": alumno["nombre"], "grupo": alumno["grupo"], "fecha": fecha_valor, "estado": estado, "observaciones": fila.get("observaciones") or ""})
+        if estado in ("Presente", "Falta", "Retardo"):
+            alumno[{"Presente":"asistencias","Falta":"faltas","Retardo":"retardos"}[estado]] += 1
+    ALERTAS_SEGUIMIENTO = []
+    reportes = ejecutar_consulta("""SELECT r.id_reporte,r.id_alumno,r.fecha_hora,r.tipo_incidencia,r.descripcion,r.estado_alerta
+        FROM reportes_conducta r ORDER BY r.fecha_hora DESC""", obtener=True) or []
+    for fila in reportes:
+        alumno = mapa_alumnos.get(fila["id_alumno"])
+        if alumno:
+            fecha_valor = fila["fecha_hora"].strftime("%Y-%m-%d") if hasattr(fila["fecha_hora"], "strftime") else str(fila["fecha_hora"])[:10]
+            ALERTAS_SEGUIMIENTO.append({"id_reporte": fila["id_reporte"], "nombre": alumno["nombre"], "grupo": alumno["grupo"], "faltas": alumno["faltas"], "estado": fila["estado_alerta"], "fecha": fecha_valor, "descripcion": fila["descripcion"]})
+
+def guardar_datos():
+    """Guarda cambios de alumnos y asistencias en MySQL; no utiliza archivos JSON."""
+    grupos_db = obtener_grupos_db()
+    conexion = conectar()
+    if conexion is None:
+        return
+    cursor = conexion.cursor(dictionary=True)
     try:
-        with open(ARCHIVO_DATOS, "r", encoding="utf-8") as archivo:
-            datos = json.load(archivo)
-        ALUMNOS_COMPARTIDOS = datos.get("alumnos", ALUMNOS_COMPARTIDOS)
-        REGISTROS_ASISTENCIA = datos.get("registros", REGISTROS_ASISTENCIA)
-        ALERTAS_SEGUIMIENTO = datos.get("alertas", ALERTAS_SEGUIMIENTO)
-        ARCHIVOS_JUSTIFICANTES = datos.get("archivos_justificantes", ARCHIVOS_JUSTIFICANTES)
-        GRUPOS_ESCOLARES = datos.get("grupos_escolares", GRUPOS_ESCOLARES)
-        CONTRASENAS_GRUPOS.update(datos.get("contrasenas_grupos", {}))
-        CALENDARIO_PDF = datos.get("calendario_pdf", CALENDARIO_PDF)
-        for grado in range(1, 7):
-            GRUPOS_ESCOLARES.setdefault(f"{grado}° A", [])
-        GRUPOS_ESCOLARES.setdefault(GRUPO_DOCENTE, [a["nombre"] for a in ALUMNOS_COMPARTIDOS])
-    except (OSError, json.JSONDecodeError):
-        pass
+        # Alumnos de los seis grupos: matrícula generada de forma estable si el formulario no la solicita.
+        import re
+        for grupo, nombres in GRUPOS_ESCOLARES.items():
+            info = grupos_db.get(grupo)
+            if not info:
+                continue
+            for nombre in nombres:
+                clave = re.sub(r"[^A-Za-z0-9]", "", nombre.upper())[:12] or "ALUMNO"
+                matricula = f"{info['id_grupo']:02d}-{clave}-{hashlib.sha1(nombre.encode('utf-8')).hexdigest()[:6].upper()}"
+                cursor.execute("""INSERT INTO alumnos (matricula,nombre_completo,id_grupo) VALUES (%s,%s,%s)
+                    ON DUPLICATE KEY UPDATE nombre_completo=VALUES(nombre_completo), id_grupo=VALUES(id_grupo)""", (matricula, nombre, info["id_grupo"]))
+        # Asistencia: una fila por alumno y fecha; actualiza si ya existía.
+        cursor.execute("SELECT id_alumno,nombre_completo,id_grupo FROM alumnos")
+        alumnos_db = cursor.fetchall()
+        mapa = {(r["nombre_completo"], r["id_grupo"]): r["id_alumno"] for r in alumnos_db}
+        for registro in REGISTROS_ASISTENCIA:
+            info = grupos_db.get(registro.get("grupo", ""))
+            if not info:
+                continue
+            id_alumno = registro.get("id_alumno") or mapa.get((registro.get("nombre"), info["id_grupo"]))
+            if not id_alumno:
+                continue
+            estado = "Justificado" if registro.get("estado") == "Justificada" else registro.get("estado")
+            if estado not in ("Presente", "Falta", "Retardo", "Justificado"):
+                continue
+            cursor.execute("SELECT id_asistencia FROM asistencia WHERE id_alumno=%s AND fecha=%s ORDER BY id_asistencia LIMIT 1", (id_alumno, registro.get("fecha")))
+            existente = cursor.fetchone()
+            if existente:
+                cursor.execute("UPDATE asistencia SET estado=%s, observaciones=%s WHERE id_asistencia=%s", (estado, registro.get("observaciones", ""), existente["id_asistencia"]))
+            else:
+                cursor.execute("INSERT INTO asistencia (id_alumno,fecha,estado,observaciones) VALUES (%s,%s,%s,%s)", (id_alumno, registro.get("fecha"), estado, registro.get("observaciones", "")))
+        # Conserva las alertas generadas por el umbral de faltas en reportes_conducta.
+        for alerta in ALERTAS_SEGUIMIENTO:
+            info = grupos_db.get(alerta.get("grupo", ""))
+            if not info:
+                continue
+            id_alumno = mapa.get((alerta.get("nombre"), info["id_grupo"]))
+            if not id_alumno:
+                continue
+            cursor.execute("SELECT id_reporte FROM reportes_conducta WHERE id_alumno=%s AND descripcion=%s LIMIT 1", (id_alumno, "Alerta automática: acumuló tres faltas o más."))
+            if not cursor.fetchone():
+                cursor.execute("""INSERT INTO reportes_conducta
+                    (id_alumno,docente_reporta,tipo_incidencia,descripcion,estado_alerta)
+                    VALUES (%s,%s,'Grave',%s,'pendiente')""",
+                    (id_alumno, USUARIO_SESION or "Sistema", "Alerta automática: acumuló tres faltas o más."))
+        # Actualiza credenciales de grupos sin almacenar contraseñas en texto plano.
+        for grupo, clave in CONTRASENAS_GRUPOS.items():
+            info = grupos_db.get(grupo)
+            if info and len(str(clave)) == 64 and all(c in "0123456789abcdef" for c in str(clave).lower()):
+                continue
+            if info:
+                cursor.execute("UPDATE accesos_sistema SET clave_hash=%s WHERE tipo='docente' AND id_grupo=%s", (hash_clave(str(clave)), info["id_grupo"]))
+        conexion.commit()
+    except (mysql.connector.Error, ValueError) as error:
+        conexion.rollback()
+        messagebox.showerror("Error al guardar en MySQL", str(error))
+    finally:
+        cursor.close()
+        conexion.close()
 
 cargar_datos()
 
@@ -418,16 +570,35 @@ def ingresar():
         mensaje.config(text="Completa los campos para continuar.", fg=TEMAS[modo_actual]["error"])
         return
     global GRUPO_SESION, USUARIO_SESION
-    USUARIO_SESION = usuario
-    if contrasena == "654321":
-        ventana.withdraw()
-        abrir_director()
-    elif contrasena in CONTRASENAS_GRUPOS.values():
-        GRUPO_SESION = next(grupo for grupo, clave in CONTRASENAS_GRUPOS.items() if clave == contrasena)
-        ventana.withdraw()
-        abrir_docente(GRUPO_SESION, usuario)
-    else:
+    conexion = conectar()
+    if conexion is None:
+        mensaje.config(text="No se pudo conectar con MySQL.", fg=TEMAS[modo_actual]["error"])
+        return
+    cursor = conexion.cursor(dictionary=True)
+    try:
+        cursor.execute("SELECT usuario,clave_hash FROM accesos_sistema WHERE tipo='director' LIMIT 1")
+        director = cursor.fetchone()
+        if director and hash_clave(contrasena) == director["clave_hash"]:
+            USUARIO_SESION = usuario or director["usuario"]
+            ventana.withdraw()
+            abrir_director()
+            return
+        cursor.execute("""SELECT g.grado,g.grupo,a.clave_hash FROM accesos_sistema a
+            JOIN grupos g ON g.id_grupo=a.id_grupo WHERE a.tipo='docente'""")
+        for fila in cursor.fetchall():
+            if hash_clave(contrasena) == fila["clave_hash"]:
+                grado = str(fila["grado"])
+                GRUPO_SESION = GRADOS_UI.get(grado, f"{grado}° {fila['grupo']}")
+                USUARIO_SESION = usuario
+                ventana.withdraw()
+                abrir_docente(GRUPO_SESION, usuario)
+                return
         mensaje.config(text="Contraseña incorrecta.", fg=TEMAS[modo_actual]["error"])
+    except mysql.connector.Error as error:
+        messagebox.showerror("Error de acceso", str(error))
+    finally:
+        cursor.close()
+        conexion.close()
 
 #Panel del docente
 def abrir_docente(grupo_docente=None, nombre_docente="Docente"):
@@ -740,7 +911,7 @@ def abrir_docente(grupo_docente=None, nombre_docente="Docente"):
         fila_info.pack(fill="x", padx=22, pady=(0, 14))
         fila_info.columnconfigure((0, 1), weight=1, uniform="tarjetas_doc")
         caja_tarjeta(fila_info, "GRUPO ASIGNADO", grupo_docente, "Escuela Primaria Nezahualcóyotl", C("acento")).grid(row=0, column=0, sticky="nsew", padx=(0, 6), pady=4)
-        caja_tarjeta(fila_info, "PROFESOR TITULAR", "Roberto Gómez", "Docente a cargo", C("verde")).grid(row=0, column=1, sticky="nsew", padx=(6, 0), pady=4)
+        caja_tarjeta(fila_info, "PROFESOR TITULAR", nombre_docente, "Docente a cargo", C("verde")).grid(row=0, column=1, sticky="nsew", padx=(6, 0), pady=4)
 
         ahora = datetime.now()
         marco_cal = tk.Frame(panel_doc, bg=C("tarjeta"), highlightbackground=C("borde"), highlightthickness=1)
@@ -1660,7 +1831,8 @@ def abrir_director():
             fila.pack(fill="x", padx=16, pady=6)
             etiqueta(fila, grupo, 11, True, bg=C_DIR("tarjeta"), width=12).pack(side="left")
             entrada = ttk.Entry(fila, width=28, font=("Segoe UI", 10), show="*")
-            entrada.insert(0, CONTRASENAS_GRUPOS.get(grupo, f"grupo{numero}"))
+            entrada.insert(0, "")
+            entrada.configure(show="*")
             entrada.pack(side="left", padx=8)
             def guardar_clave(g=grupo, e=entrada):
                 clave = e.get().strip()
