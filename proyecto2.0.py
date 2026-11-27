@@ -294,7 +294,7 @@ def preparar_base_aplicacion():
             UNIQUE KEY uq_acceso_usuario (usuario)
         ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4""")
         conexion.commit()
-        # Accesos iniciales de compatibilidad. Se pueden cambiar desde Dirección.
+        
         cursor.execute("SELECT COUNT(*) FROM accesos_sistema WHERE tipo='director'")
         if cursor.fetchone()[0] == 0:
             cursor.execute("INSERT INTO accesos_sistema (tipo,id_grupo,usuario,clave_hash) VALUES ('director',NULL,'director',%s)", (hash_clave("654321"),))

@@ -43,9 +43,8 @@ def conectar():
         )
 
         return None
-                                              
+    # Valentina Gutiérrez Romero: Diseño y elaboración del script SQL para la estructura de la base de datos.                      
 ''' DROP DATABASE IF EXISTS sistema_alerta_temprana;
-
 CREATE DATABASE sistema_alerta_temprana
 CHARACTER SET utf8mb4
 COLLATE utf8mb4_unicode_ci;
@@ -140,7 +139,7 @@ CREATE TABLE seguimiento (
 ) ENGINE=InnoDB;'''
 
 modo_actual = "oscuro"
-
+# Valentina Gutiérrez Romero: Diseño de la paleta de colores para las interfaces y los modos claro y oscuro.
 FONDO = "#081426"
 AZUL = "#102B50"
 AZUL_CLARO = "#173B68"
@@ -794,7 +793,7 @@ def abrir_docente(grupo_docente=None, nombre_docente="Docente"):
     panel_id_doc = canvas_doc.create_window((0, 0), window=panel_doc, anchor="nw")
     panel_doc.bind("<Configure>", lambda e: canvas_doc.configure(scrollregion=canvas_doc.bbox("all")))
     canvas_doc.bind("<Configure>", lambda e: canvas_doc.itemconfigure(panel_id_doc, width=e.width))
-
+   # Valentina Gutiérrez Romero: Desarrollo de la función para limpiar el contenido del panel y reiniciar su desplazamiento.
     def limpiar_panel():
         for widget in panel_doc.winfo_children():
             widget.destroy()
@@ -882,7 +881,7 @@ def abrir_docente(grupo_docente=None, nombre_docente="Docente"):
                 "Se generó una alerta para el panel de dirección."
             )
         actualizar_tabla_checks()
-
+# Valentina Gutiérrez Romero: Desarrollo de las funciones para agregar y eliminar alumnos del sistema.  
     def agregar_alumno():
         nombre = entrada_nombre.get().strip()
         if not nombre:
@@ -1036,7 +1035,7 @@ def abrir_docente(grupo_docente=None, nombre_docente="Docente"):
         actualizar_tabla_checks()
 
 
-    # Valentina Gutiérrez Romero y Cristóbal Granados José Francisco: selector horizontal de grupo y control de asistencia.
+# Valentina Gutiérrez Romero y Cristóbal Granados José Francisco: Desarrollo del selector horizontal de grupos y la sección de control de asistencia.    
     def mostrar_asistencia_docente():
         nonlocal grupo_docente, alumnos, sel_nombre, entrada_nombre, entrada_fecha, frame_tabla_checks
         limpiar_panel()
@@ -1484,7 +1483,8 @@ def abrir_docente(grupo_docente=None, nombre_docente="Docente"):
     configurar_estilos()
     construir_menu_docente()
     cambiar_vista_docente("Inicio")
-                   
+# Panel de direccion
+     
 def abrir_director():
     ventana_dir = tk.Toplevel(raiz_principal)
     ventana_dir.title("Sistema de alerta temprana | Panel de Dirección")
@@ -1543,6 +1543,31 @@ def abrir_director():
             "seleccion_barra": "#203D60", "hover_barra": "#173B68","encabezado1": "#0B8511"
         }
     }
+
+    COLORES_GRUPOS = {
+        "1° A": {"claro": "#D9EAFE", "activo": "#8DBBEF", "texto": "#244D78"},
+        "2° A": {"claro": "#DDF3E5", "activo": "#91D5AC", "texto": "#245B3B"},
+        "3° A": {"claro": "#FCE5D8", "activo": "#F2B18F", "texto": "#85452A"},
+        "4° A": {"claro": "#F0E3FA", "activo": "#C6A0E6", "texto": "#624080"},
+        "5° A": {"claro": "#FFF1C9", "activo": "#EACB72", "texto": "#755817"},
+        "6° A": {"claro": "#F9DFE8", "activo": "#E8A0B9", "texto": "#813D58"},
+    }
+
+    def colores_grupo(grupo, seleccionado=False):
+        colores = COLORES_GRUPOS.get(
+            grupo, {"claro": "#E2E8F0", "activo": "#94A3B8", "texto": "#334155"}
+        )
+        oscuro = tema_actual == "oscuro"
+
+        if seleccionado:
+            fondo = colores["activo"]
+            texto = "#172033" if oscuro else colores["texto"]
+        else:
+            fondo = colores["claro"]
+            texto = colores["texto"]
+
+        return fondo, texto
+
 
     def C_DIR(clave):
         return TEMAS_DIR[tema_actual][clave]
@@ -1762,36 +1787,62 @@ def abrir_director():
         etiqueta(fila_grafica, "Grupo:", 10, True, bg=C_DIR("tarjeta")).pack(side="left", padx=(0, 8))
         zona_grafica = tk.Frame(marco_grafica_dir, bg=C_DIR("tarjeta"))
         zona_grafica.pack(fill="x")
+    #Valentina Gutiérrez Romero - Agregué botones de grupos , sustituyendo los selectores
+    
+
+        botones_grupos = {}
+
+        def actualizar_botones_grupos():
+            for grupo, boton in botones_grupos.items():
+                fondo, texto = colores_grupo(
+                    grupo,
+                    selector_grafica_var.get() == grupo
+                )
+                boton.configure(
+                    bg=fondo,
+                    fg=texto,
+                    activebackground=fondo,
+                    activeforeground=texto
+                )
+
         def actualizar_grafica_director(grupo):
             selector_grafica_var.set(grupo)
+
             for widget in zona_grafica.winfo_children():
                 widget.destroy()
-            dibujar_grafica_asistencia(zona_grafica, grupo, REGISTROS_ASISTENCIA, {
-                "tarjeta": C_DIR("tarjeta"), "texto": C_DIR("texto"), "borde": C_DIR("borde")
-            })
+
+            dibujar_grafica_asistencia(
+                zona_grafica,
+                grupo,
+                REGISTROS_ASISTENCIA,
+                {
+                    "tarjeta": C_DIR("tarjeta"),
+                    "texto": C_DIR("texto"),
+                    "borde": C_DIR("borde")
+                }
+            )
+
+            actualizar_botones_grupos()
+
         for n in range(1, 7):
             g = f"{n}° A"
-            tk.Button(fila_grafica, text=g, command=lambda x=g: actualizar_grafica_director(x),
-                      bg=C_DIR("seleccion") if selector_grafica_var.get() == g else C_DIR("panel"),
-                      fg=C_DIR("texto"), activebackground=C_DIR("acento"),
-                      relief="flat", bd=0, padx=12, pady=7, cursor="hand2"
-                      ).pack(side="left", padx=3)
+
+            boton = tk.Button(
+                fila_grafica,
+                text=g,
+                command=lambda x=g: actualizar_grafica_director(x),
+                font=("Segoe UI", 10, "bold"),
+                relief="flat",
+                bd=0,
+                padx=18,
+                pady=10,
+                cursor="hand2"
+            )
+
+            boton.pack(side="left", padx=4, pady=5)
+            botones_grupos[g] = boton
+
         actualizar_grafica_director("1° A")
-        etiqueta(panel, "ACCESOS RÁPIDOS", 11, True).pack(anchor="w", padx=22, pady=(3, 10))
-        accesos = tk.Frame(panel, bg=C_DIR("fondo")); accesos.pack(fill="x", padx=22)
-        for texto, clave, color in [("Listas de asistencia", "asistencia", C_DIR("acento")),
-                                    ("Calendario escolar", "calendario", C_DIR("encabezado1")),
-                                    ("Carta compromiso", "carta", C_DIR("verde"))]:
-            tk.Button(accesos, text=texto, command=lambda k=clave: mostrar_vista(k),
-                      bg="#FFFFFF", fg="#111827", activebackground="#E8EEF5",
-                      activeforeground="#111827", font=("Segoe UI", 9, "bold"),
-                      relief="flat", bd=0, cursor="hand2", padx=12, pady=10
-                      ).pack(side="left", padx=(0, 7), pady=4)
-        nota = tk.Frame(panel, bg=C_DIR("tarjeta"), highlightbackground=C_DIR("borde"), highlightthickness=1)
-        nota.pack(fill="x", padx=22, pady=22)
-        etiqueta(nota, "Información del sistema", 12, True, bg=C_DIR("tarjeta")).pack(anchor="w", padx=16, pady=(14, 5))
-        etiqueta(nota, f"Fecha actual: {fecha_actual}\nUsa el menú para acceder a los módulos.",
-                 10, color=C_DIR("secundario"), bg=C_DIR("tarjeta"), justify="left").pack(anchor="w", padx=16, pady=(0, 14))
 
     def mostrar_asistencia():
         limpiar_panel()
@@ -1799,8 +1850,42 @@ def abrir_director():
         controles = tk.Frame(panel, bg=C_DIR("fondo")); controles.pack(fill="x", padx=22, pady=(0, 12))
         etiqueta(controles, "Grupo:", 10, True).pack(side="left", padx=(0, 8))
         grupo_var = tk.StringVar(value="1° A")
-        selector_grupo = ttk.Combobox(controles, textvariable=grupo_var, values=list(grupos.keys()), state="readonly", width=12, font=("Segoe UI", 10))
-        selector_grupo.pack(side="left")
+        botones_asistencia = {}
+
+        def seleccionar_grupo(grupo):
+            grupo_var.set(grupo)
+            cargar_grupo()
+            actualizar_botones_asistencia()
+
+        def actualizar_botones_asistencia():
+            for grupo, boton in botones_asistencia.items():
+                fondo, texto = colores_grupo(
+                    grupo, grupo_var.get() == grupo
+                )
+                boton.configure(
+                    bg=fondo,
+                    fg=texto,
+                    activebackground=fondo,
+                    activeforeground=texto
+                )
+
+        for n in range(1, 7):
+            grupo = f"{n}° A"
+
+            boton = tk.Button(
+                controles,
+                text=grupo,
+                command=lambda g=grupo: seleccionar_grupo(g),
+                font=("Segoe UI", 10, "bold"),
+                relief="flat",
+                bd=0,
+                padx=14,
+                pady=8,
+                cursor="hand2"
+            )
+
+            boton.pack(side="left", padx=3)
+            botones_asistencia[grupo] = boton
         tabla = crear_tabla(panel, ("No.", "Alumno", "Grupo", "Estado"), (55, 220, 100, 130))
         def cargar_grupo(_event=None):
             for item in tabla.get_children(): tabla.delete(item)
@@ -1812,6 +1897,7 @@ def abrir_director():
                 tabla.insert("", "end", iid=str(i), values=(i, alumno, grupo, estado),
                              tags=("ausente",) if estado in ("Falta", "Ausente") else ())
             tabla.tag_configure("ausente", background="#F8C9D1", foreground="#A3122A")
+
         def cambiar_estado():
             seleccion = tabla.selection()
             if not seleccion:
@@ -1870,8 +1956,8 @@ def abrir_director():
             guardar_datos()
             tabla.item(iid, values=(valores[0], alumno, grupo, nuevo_estado),
                        tags=("ausente",) if nuevo_estado in ("Ausente", "Falta") else ())
-        selector_grupo.bind("<<ComboboxSelected>>", cargar_grupo)
         cargar_grupo()
+        actualizar_botones_asistencia()
         boton_padre(panel, "Cambiar estado del seleccionado", cambiar_estado).pack(anchor="e", padx=22, pady=(0, 18))
 
     def mostrar_registro_masivo():
