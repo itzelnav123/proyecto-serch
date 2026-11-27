@@ -1398,14 +1398,14 @@ def abrir_docente(grupo_docente=None, nombre_docente="Docente"):
             mostrar_calendario_docente()
         else:
             mostrar_etica()
-
+#Valentina Gutiérrez Romero - Cambie reportes por incidencias 
     def construir_menu_docente():
         botones_menu_doc.clear()
         for w in menu_frame_doc.winfo_children():
             w.destroy()
         opciones_doc = [("⌂   Inicio", "Inicio"), ("▤   Asistencia", "Asistencia"),
                         ("▤   Justificantes", "Justificantes"),
-                        ("✎   Reportes", "Reportes"), ("▦   Calendario escolar", "Calendario escolar")]
+                        ("✎   Incidencias", "Incidencias"), ("▦   Calendario escolar", "Calendario escolar")]
         compacto = False 
         for texto, clave in opciones_doc:
             texto_boton = texto if not compacto else texto.split("   ")[-1]
