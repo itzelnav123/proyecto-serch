@@ -43,8 +43,9 @@ def conectar():
         )
 
         return None
-    # Valentina Gutiérrez Romero: Diseño y elaboración del script SQL para la estructura de la base de datos.                      
+    # Marina Itzel Juarez Nava:elaboración del script SQL para la estructura de la base de datos.                      
 ''' DROP DATABASE IF EXISTS sistema_alerta_temprana;
+
 CREATE DATABASE sistema_alerta_temprana
 CHARACTER SET utf8mb4
 COLLATE utf8mb4_unicode_ci;
@@ -69,6 +70,15 @@ CREATE TABLE alumnos (
     FOREIGN KEY (id_grupo) REFERENCES grupos(id_grupo)
         ON DELETE RESTRICT ON UPDATE CASCADE
 ) ENGINE=InnoDB;
+
+INSERT INTO grupos (grado, grupo, turno, ciclo_escolar)
+VALUES
+('Primero', 'A', 'Matutino', '2026-2027'),
+('Segundo', 'A', 'Matutino', '2026-2027'),
+('Tercero', 'A', 'Matutino', '2026-2027'),
+('Cuarto', 'A', 'Matutino', '2026-2027'),
+('Quinto', 'A', 'Matutino', '2026-2027'),
+('Sexto', 'A', 'Matutino', '2026-2027');
 
 CREATE TABLE asistencia (
     id_asistencia INT AUTO_INCREMENT PRIMARY KEY,
