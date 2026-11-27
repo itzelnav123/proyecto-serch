@@ -1336,8 +1336,8 @@ def abrir_docente(grupo_docente=None, nombre_docente="Docente"):
         etiqueta(form, "Describe la situación", 10, True, bg=C("tarjeta")).pack(anchor="w", pady=(10, 4))
         texto_desc = tk.Text(form, height=4, font=("Segoe UI", 10), bg=C("campo"), fg=C("texto_campo"), relief="flat", padx=8, pady=8, insertbackground=C("texto_campo"))
         texto_desc.pack(fill="x")
-
-        marco_tabla_rep = tk.LabelFrame(panel_doc, text=" Reportes guardados ", bg=C("fondo"), fg=C("texto"), font=("Segoe UI", 10, "bold"))
+        #Valentina Gutiérrez Romero - Modifique Reportes por Incidencias
+        marco_tabla_rep = tk.LabelFrame(panel_doc, text=" Incidencias  guardadas ", bg=C("fondo"), fg=C("texto"), font=("Segoe UI", 10, "bold"))
         marco_tabla_rep.pack(fill="both", expand=True, padx=22, pady=10)
         tabla_rep = ttk.Treeview(marco_tabla_rep, columns=("fecha", "nombre", "tipo", "gravedad"), show="headings", height=6)
         for c, t in [("fecha", "Día"), ("nombre", "Alumno"), ("tipo", "Motivo"), ("gravedad", "Gravedad")]:
@@ -1363,9 +1363,9 @@ def abrir_docente(grupo_docente=None, nombre_docente="Docente"):
             reportes_conducta.append({"fecha": fecha, "nombre": alumno, "tipo": tipo_var.get(), "gravedad": gravedad_var.get(), "descripcion": desc})
             actualizar_reportes()
             texto_desc.delete("1.0", "end")
-            messagebox.showinfo("Guardado", "Reporte de conducta registrado exitosamente.")
+            messagebox.showinfo("Guardado", "Incidencia registrada exitosamente.")
 
-        boton_padre(form, "GUARDAR REPORTE", guardar_reporte).pack(anchor="w", pady=10)
+        boton_padre(form, "GUARDAR INCIDENCIA", guardar_reporte).pack(anchor="w", pady=10)
         actualizar_reportes()
 
     def mostrar_calendario_docente():
