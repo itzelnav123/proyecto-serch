@@ -1034,8 +1034,7 @@ def abrir_docente(grupo_docente=None, nombre_docente="Docente"):
         boton_padre(marco_b, "Eliminar alumno seleccionado", eliminar_alumno, C("rojo"), "#FFFFFF").pack(side="left")
         actualizar_tabla_checks()
 
-
-# Valentina Gutiérrez Romero y Cristóbal Granados José Francisco: Desarrollo del selector horizontal de grupos y la sección de control de asistencia.    
+# Valentina Gutiérrez Romero y Cristóbal Granados José Francisco: Desarrollamos el selector horizontal de grupos y la sección de control de asistencia.
     def mostrar_asistencia_docente():
         nonlocal grupo_docente, alumnos, sel_nombre, entrada_nombre, entrada_fecha, frame_tabla_checks
         limpiar_panel()
