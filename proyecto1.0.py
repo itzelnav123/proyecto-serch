@@ -1787,7 +1787,7 @@ def abrir_director():
         zona_grafica = tk.Frame(marco_grafica_dir, bg=C_DIR("tarjeta"))
         zona_grafica.pack(fill="x")
 
-    #Valentina Gutiérrez Romero - Agregué botones de grupos , sustituyendo los selectores
+   # Valentina Gutiérrez Romero: Diseñé y mejoré los botones de selección de grupo en el panel de Dirección, optimizando su presentación y funcionalidad.
 
         botones_grupos = {}
 
