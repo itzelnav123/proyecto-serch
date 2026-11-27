@@ -1081,43 +1081,11 @@ def abrir_docente(grupo_docente=None, nombre_docente="Docente"):
         marco_acciones.pack(fill="x", padx=22, pady=12)
         boton_padre(marco_acciones, "Eliminar alumno seleccionado", eliminar_alumno,
                     C("rojo"), "#FFFFFF").pack(side="left")
+#Valentina Gutiérrez Romero- Elimine los botones de grupos en el panel de docente
+       
+            
 
-        def seleccionar_grupo(grupo):
-            nonlocal grupo_docente, alumnos, sel_nombre
-            grupo_docente = grupo
-            sel_nombre = None
-            nuevos = []
-            for nombre in GRUPOS_ESCOLARES.get(grupo, []):
-                relacionados = [r for r in registros if r.get("nombre") == nombre and r.get("grupo") == grupo]
-                nuevos.append({
-                    "nombre": nombre,
-                    "asistencias": sum(r.get("estado") in ("Presente", "Asistió", "Asistio") for r in relacionados),
-                    "faltas": sum(r.get("estado") == "Falta" for r in relacionados),
-                    "retardos": sum(r.get("estado") == "Retardo" for r in relacionados)
-                })
-            alumnos = nuevos
-            entrada_nombre.configure(values=[a["nombre"] for a in alumnos])
-            for g, boton in botones_grupo.items():
-                boton.configure(bg=C("seleccion_barra") if g == grupo else C("panel"),
-                                fg=C("texto") if g == grupo else C("texto"))
-            actualizar_tabla_checks()
-
-        for grupo in grupos_disponibles:
-            boton = tk.Button(selector_grupos, text=grupo,
-                              command=lambda g=grupo: seleccionar_grupo(g),
-                              font=("Segoe UI", 9, "bold"), relief="flat", bd=0,
-                              cursor="hand2", padx=14, pady=9,
-                              bg=C("seleccion_barra") if grupo == grupo_docente else C("panel"),
-                              fg=C("texto"))
-            boton.pack(side="left", padx=(0, 7), pady=3)
-            botones_grupo[grupo] = boton
-
-        if grupo_docente not in grupos_disponibles:
-            seleccionar_grupo(grupos_disponibles[0])
-        else:
-            for grupo, boton in botones_grupo.items():
-                boton.configure(bg=C("seleccion_barra") if grupo == grupo_docente else C("panel"))
-            actualizar_tabla_checks()
+        
 
     def mostrar_alertas_docente():
         limpiar_panel()
