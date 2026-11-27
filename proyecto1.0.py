@@ -1041,8 +1041,7 @@ def abrir_docente(grupo_docente=None, nombre_docente="Docente"):
         encabezado_asistencia = tk.Frame(panel_doc, bg=C("fondo"))
         encabezado_asistencia.pack(fill="x", padx=22, pady=(18, 8))
         etiqueta(encabezado_asistencia, "CONTROL DE ASISTENCIA", 19, True).pack(anchor="w")
-        etiqueta(encabezado_asistencia, "Selecciona el grupo y registra el estado de cada alumno.", 10,
-                 color=C("secundario")).pack(anchor="w", pady=(3, 0))
+        #Valentina Gutierrez Romero- Elimine etiquta debajo de control de asistencia 
 
         selector_grupos = tk.Frame(panel_doc, bg=C("fondo"))
         selector_grupos.pack(fill="x", padx=22, pady=(8, 14))
@@ -1083,10 +1082,6 @@ def abrir_docente(grupo_docente=None, nombre_docente="Docente"):
                     C("rojo"), "#FFFFFF").pack(side="left")
 #Valentina Gutiérrez Romero- Elimine los botones de grupos en el panel de docente
        
-            
-
-        
-
     def mostrar_alertas_docente():
         limpiar_panel()
         bloque = tk.Frame(panel_doc, bg=C("fondo"))
