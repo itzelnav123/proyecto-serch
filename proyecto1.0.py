@@ -793,7 +793,7 @@ def abrir_docente(grupo_docente=None, nombre_docente="Docente"):
     panel_id_doc = canvas_doc.create_window((0, 0), window=panel_doc, anchor="nw")
     panel_doc.bind("<Configure>", lambda e: canvas_doc.configure(scrollregion=canvas_doc.bbox("all")))
     canvas_doc.bind("<Configure>", lambda e: canvas_doc.itemconfigure(panel_id_doc, width=e.width))
-   # Valentina Gutiérrez Romero: Desarrollo de la función para limpiar el contenido del panel y reiniciar su desplazamiento.
+
     def limpiar_panel():
         for widget in panel_doc.winfo_children():
             widget.destroy()
@@ -1543,7 +1543,7 @@ def abrir_director():
             "seleccion_barra": "#203D60", "hover_barra": "#173B68","encabezado1": "#0B8511"
         }
     }
-
+# Valentina Gutiérrez Romero - Aregué la paleta de colores de los botones por grupo
     COLORES_GRUPOS = {
         "1° A": {"claro": "#D9EAFE", "activo": "#8DBBEF", "texto": "#244D78"},
         "2° A": {"claro": "#DDF3E5", "activo": "#91D5AC", "texto": "#245B3B"},
@@ -1787,8 +1787,8 @@ def abrir_director():
         etiqueta(fila_grafica, "Grupo:", 10, True, bg=C_DIR("tarjeta")).pack(side="left", padx=(0, 8))
         zona_grafica = tk.Frame(marco_grafica_dir, bg=C_DIR("tarjeta"))
         zona_grafica.pack(fill="x")
+
     #Valentina Gutiérrez Romero - Agregué botones de grupos , sustituyendo los selectores
-    
 
         botones_grupos = {}
 
