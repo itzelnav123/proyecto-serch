@@ -881,7 +881,7 @@ def abrir_docente(grupo_docente=None, nombre_docente="Docente"):
                 "Se generó una alerta para el panel de dirección."
             )
         actualizar_tabla_checks()
-# Valentina Gutiérrez Romero: Desarrollo de las funciones para agregar y eliminar alumnos del sistema.  
+#  Valentina Gutiérrez Romero: Desarrollé las funciones para registrar nuevos alumnos y eliminar registros del sistema.  
     def agregar_alumno():
         nombre = entrada_nombre.get().strip()
         if not nombre:
