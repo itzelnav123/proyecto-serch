@@ -1001,38 +1001,7 @@ def abrir_docente(grupo_docente=None, nombre_docente="Docente"):
             "tarjeta": C("tarjeta"), "texto": C("texto"), "borde": C("borde")
         }, alumnos)
 
-        bloque_sec = tk.Frame(panel_doc, bg=C("fondo"))
-        bloque_sec.pack(fill="x", padx=22, pady=(10, 8))
-        etiqueta(bloque_sec, "CONTROL DE ASISTENCIAS", 20, True).pack(anchor="w")
-        marco_datos = tk.Frame(panel_doc, bg=C("fondo"))
-        marco_datos.pack(fill="x", padx=22, pady=5)
-        tarjeta_controles = tk.Frame(panel_doc, bg=C("tarjeta"),
-                                     highlightbackground=C("borde"), highlightthickness=1)
-        tarjeta_controles.pack(fill="x", padx=22, pady=8)
-        fila_controles = tk.Frame(tarjeta_controles, bg=C("tarjeta"))
-        fila_controles.pack(fill="x", padx=12, pady=12)
-        fila_controles.columnconfigure(1, weight=1)
-        etiqueta(fila_controles, "Alumno:", 10, True, bg=C("tarjeta")).grid(row=0, column=0, padx=(0, 8), sticky="w")
-        entrada_nombre = ttk.Combobox(fila_controles, font=("Segoe UI", 10),
-                                      values=[a["nombre"] for a in alumnos], width=18)
-        entrada_nombre.grid(row=0, column=1, sticky="ew", padx=(0, 8))
-        boton_padre(fila_controles, "＋ Agregar alumno", agregar_alumno).grid(row=0, column=2, padx=(0, 12))
-        etiqueta(fila_controles, "Fecha:", 10, True, bg=C("tarjeta")).grid(row=0, column=3, padx=(0, 8))
-        entrada_fecha = ttk.Entry(fila_controles, font=("Segoe UI", 10), width=13)
-        entrada_fecha.insert(0, date.today().isoformat())
-        entrada_fecha.grid(row=0, column=4, padx=(0, 8))
-        boton_padre(fila_controles, "Actualizar", actualizar_tabla_checks,
-                    C("azul_claro"), C("boton_secundario_texto")).grid(row=0, column=5)
-        header_tabla = tk.Frame(panel_doc, bg=C("tabla_cabecera"), padx=8, pady=8)
-        header_tabla.pack(fill="x", padx=22, pady=(12, 0))
-        for texto, ancho, padx in [("No", 4, 0), ("Nombre", 22, 0), ("Asistió", 9, 5), ("Retardo", 9, 5), ("Falta", 8, 5), ("Justificada", 11, 5)]:
-            tk.Label(header_tabla, text=texto, bg=C("tabla_cabecera"), fg=C("texto"), font=("Segoe UI", 10, "bold"), width=ancho, anchor="w" if texto in ("No", "Nombre") else "center").pack(side="left", padx=padx)
-        frame_tabla_checks = tk.Frame(panel_doc, bg=C("tarjeta"), highlightbackground=C("borde"), highlightthickness=1)
-        frame_tabla_checks.pack(fill="both", expand=True, padx=22, pady=2)
-        marco_b = tk.Frame(panel_doc, bg=C("fondo"))
-        marco_b.pack(padx=22, pady=12, anchor="w")
-        boton_padre(marco_b, "Eliminar alumno seleccionado", eliminar_alumno, C("rojo"), "#FFFFFF").pack(side="left")
-        actualizar_tabla_checks()
+        
 
 # Valentina Gutiérrez Romero y Cristóbal Granados José Francisco: Desarrollamos el selector horizontal de grupos y la sección de control de asistencia.
     def mostrar_asistencia_docente():
@@ -1041,31 +1010,63 @@ def abrir_docente(grupo_docente=None, nombre_docente="Docente"):
         encabezado_asistencia = tk.Frame(panel_doc, bg=C("fondo"))
         encabezado_asistencia.pack(fill="x", padx=22, pady=(18, 8))
         etiqueta(encabezado_asistencia, "CONTROL DE ASISTENCIA", 19, True).pack(anchor="w")
-        etiqueta(encabezado_asistencia, "Selecciona el grupo y registra el estado de cada alumno.", 10,
-                 color=C("secundario")).pack(anchor="w", pady=(3, 0))
 
-        selector_grupos = tk.Frame(panel_doc, bg=C("fondo"))
-        selector_grupos.pack(fill="x", padx=22, pady=(8, 14))
-        grupos_disponibles = [f"{n}° A" for n in range(1, 7)]
-        botones_grupo = {}
 
-        tarjeta = tk.Frame(panel_doc, bg=C("tarjeta"),
-                           highlightbackground=C("borde"), highlightthickness=1)
+        tarjeta = tk.Frame(
+            panel_doc,
+            bg=C("tarjeta"),
+            highlightbackground=C("borde"),
+            highlightthickness=1,
+            bd=0
+        )
         tarjeta.pack(fill="x", padx=22, pady=(0, 12))
-        fila_controles = tk.Frame(tarjeta, bg=C("tarjeta"))
-        fila_controles.pack(fill="x", padx=12, pady=12)
+
+        fila_controles = tk.Frame(
+            tarjeta,
+            bg=C("tarjeta")
+        )
+        fila_controles.pack(fill="x", padx=16, pady=16)
+
         fila_controles.columnconfigure(1, weight=1)
-        etiqueta(fila_controles, "Alumno:", 10, True, bg=C("tarjeta")).grid(row=0, column=0, padx=(0, 8), sticky="w")
-        entrada_nombre = ttk.Combobox(fila_controles, font=("Segoe UI", 10),
-                                      values=[a["nombre"] for a in alumnos], width=20)
-        entrada_nombre.grid(row=0, column=1, sticky="ew", padx=(0, 8))
-        boton_padre(fila_controles, "＋ Agregar alumno", agregar_alumno).grid(row=0, column=2, padx=(0, 12))
-        etiqueta(fila_controles, "Fecha:", 10, True, bg=C("tarjeta")).grid(row=0, column=3, padx=(0, 8))
-        entrada_fecha = ttk.Entry(fila_controles, font=("Segoe UI", 10), width=13)
+
+        etiqueta(
+            fila_controles, "Alumno:", 10, True,
+            bg=C("tarjeta")
+        ).grid(row=0, column=0, padx=(0, 8), sticky="w")
+
+        entrada_nombre = ttk.Combobox(
+            fila_controles,
+            font=("Segoe UI", 10),
+            values=[a["nombre"] for a in alumnos],
+            width=20
+        )
+        entrada_nombre.grid(
+            row=0, column=1, sticky="ew", padx=(0, 8)
+        )
+
+        boton_padre(
+            fila_controles, "＋ Agregar alumno", agregar_alumno
+        ).grid(row=0, column=2, padx=(0, 12))
+
+        etiqueta(
+            fila_controles, "Fecha:", 10, True,
+            bg=C("tarjeta")
+        ).grid(row=0, column=3, padx=(0, 8))
+
+        entrada_fecha = ttk.Entry(
+            fila_controles,
+            font=("Segoe UI", 10),
+            width=13
+        )
         entrada_fecha.insert(0, date.today().isoformat())
-        entrada_fecha.grid(row=0, column=4, padx=(0, 8))
-        boton_padre(fila_controles, "Actualizar", actualizar_tabla_checks,
-                    C("azul_claro"), C("boton_secundario_texto")).grid(row=0, column=5)
+        entrada_fecha.grid(row=0, column=4, padx=(0, 8), ipady=3)
+
+        boton_padre(
+            fila_controles, "Actualizar",
+            actualizar_tabla_checks,
+            C("azul_claro"),
+            C("boton_secundario_texto")
+        ).grid(row=0, column=5)
 
         header_tabla = tk.Frame(panel_doc, bg=C("tabla_cabecera"), padx=8, pady=8)
         header_tabla.pack(fill="x", padx=22, pady=(8, 0))
@@ -1081,43 +1082,6 @@ def abrir_docente(grupo_docente=None, nombre_docente="Docente"):
         marco_acciones.pack(fill="x", padx=22, pady=12)
         boton_padre(marco_acciones, "Eliminar alumno seleccionado", eliminar_alumno,
                     C("rojo"), "#FFFFFF").pack(side="left")
-
-        def seleccionar_grupo(grupo):
-            nonlocal grupo_docente, alumnos, sel_nombre
-            grupo_docente = grupo
-            sel_nombre = None
-            nuevos = []
-            for nombre in GRUPOS_ESCOLARES.get(grupo, []):
-                relacionados = [r for r in registros if r.get("nombre") == nombre and r.get("grupo") == grupo]
-                nuevos.append({
-                    "nombre": nombre,
-                    "asistencias": sum(r.get("estado") in ("Presente", "Asistió", "Asistio") for r in relacionados),
-                    "faltas": sum(r.get("estado") == "Falta" for r in relacionados),
-                    "retardos": sum(r.get("estado") == "Retardo" for r in relacionados)
-                })
-            alumnos = nuevos
-            entrada_nombre.configure(values=[a["nombre"] for a in alumnos])
-            for g, boton in botones_grupo.items():
-                boton.configure(bg=C("seleccion_barra") if g == grupo else C("panel"),
-                                fg=C("texto") if g == grupo else C("texto"))
-            actualizar_tabla_checks()
-
-        for grupo in grupos_disponibles:
-            boton = tk.Button(selector_grupos, text=grupo,
-                              command=lambda g=grupo: seleccionar_grupo(g),
-                              font=("Segoe UI", 9, "bold"), relief="flat", bd=0,
-                              cursor="hand2", padx=14, pady=9,
-                              bg=C("seleccion_barra") if grupo == grupo_docente else C("panel"),
-                              fg=C("texto"))
-            boton.pack(side="left", padx=(0, 7), pady=3)
-            botones_grupo[grupo] = boton
-
-        if grupo_docente not in grupos_disponibles:
-            seleccionar_grupo(grupos_disponibles[0])
-        else:
-            for grupo, boton in botones_grupo.items():
-                boton.configure(bg=C("seleccion_barra") if grupo == grupo_docente else C("panel"))
-            actualizar_tabla_checks()
 
     def mostrar_alertas_docente():
         limpiar_panel()
@@ -1353,7 +1317,7 @@ def abrir_docente(grupo_docente=None, nombre_docente="Docente"):
         limpiar_panel()
         bloque_sec = tk.Frame(panel_doc, bg=C("fondo"))
         bloque_sec.pack(fill="x", padx=22, pady=(20, 16))
-        etiqueta(bloque_sec, "REPORTE DE CONDUCTA", 20, True).pack(anchor="w")
+        etiqueta(bloque_sec, " INCIDENCIAS ", 20, True).pack(anchor="w")
         form = tk.Frame(panel_doc, bg=C("tarjeta"), padx=18, pady=16, highlightbackground=C("borde"), highlightthickness=1)
         form.pack(fill="x", padx=22)
         fila1 = tk.Frame(form, bg=C("tarjeta")); fila1.pack(fill="x", pady=5)
@@ -1373,8 +1337,8 @@ def abrir_docente(grupo_docente=None, nombre_docente="Docente"):
         etiqueta(form, "Describe la situación", 10, True, bg=C("tarjeta")).pack(anchor="w", pady=(10, 4))
         texto_desc = tk.Text(form, height=4, font=("Segoe UI", 10), bg=C("campo"), fg=C("texto_campo"), relief="flat", padx=8, pady=8, insertbackground=C("texto_campo"))
         texto_desc.pack(fill="x")
-
-        marco_tabla_rep = tk.LabelFrame(panel_doc, text=" Reportes guardados ", bg=C("fondo"), fg=C("texto"), font=("Segoe UI", 10, "bold"))
+    #Valentina Gutiérrez Romero - Cambie "Reportes" por "Incidencias "
+        marco_tabla_rep = tk.LabelFrame(panel_doc, text=" Incidencias guardadas ", bg=C("fondo"), fg=C("texto"), font=("Segoe UI", 10, "bold"))
         marco_tabla_rep.pack(fill="both", expand=True, padx=22, pady=10)
         tabla_rep = ttk.Treeview(marco_tabla_rep, columns=("fecha", "nombre", "tipo", "gravedad"), show="headings", height=6)
         for c, t in [("fecha", "Día"), ("nombre", "Alumno"), ("tipo", "Motivo"), ("gravedad", "Gravedad")]:
@@ -1400,9 +1364,9 @@ def abrir_docente(grupo_docente=None, nombre_docente="Docente"):
             reportes_conducta.append({"fecha": fecha, "nombre": alumno, "tipo": tipo_var.get(), "gravedad": gravedad_var.get(), "descripcion": desc})
             actualizar_reportes()
             texto_desc.delete("1.0", "end")
-            messagebox.showinfo("Guardado", "Reporte de conducta registrado exitosamente.")
+            messagebox.showinfo("Guardado", "Incidencia registrada exitosamente.")
 
-        boton_padre(form, "GUARDAR REPORTE", guardar_reporte).pack(anchor="w", pady=10)
+        boton_padre(form, "GUARDAR INCIDENCIA", guardar_reporte).pack(anchor="w", pady=10)
         actualizar_reportes()
 
     def mostrar_calendario_docente():
@@ -1442,7 +1406,7 @@ def abrir_docente(grupo_docente=None, nombre_docente="Docente"):
             w.destroy()
         opciones_doc = [("⌂   Inicio", "Inicio"), ("▤   Asistencia", "Asistencia"),
                         ("▤   Justificantes", "Justificantes"),
-                        ("✎   Reportes", "Reportes"), ("▦   Calendario escolar", "Calendario escolar")]
+                        ("✎   Incidencias", "Incidencias"), ("▦   Calendario escolar", "Calendario escolar")]
         compacto = False 
         for texto, clave in opciones_doc:
             texto_boton = texto if not compacto else texto.split("   ")[-1]
